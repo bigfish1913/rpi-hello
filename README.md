@@ -20,6 +20,11 @@ Prebuilt (no Rust toolchain needed):
 rpi install rpi-hello --github bigfish1913/rpi-hello
 ```
 
+Prebuilt targets: Linux GNU (`x86_64`, `aarch64`), macOS (`x86_64`, `arm64`) and
+Windows (`x86_64`). Alpine/musl users install from source (see below); Rust
+drops `cdylib` output for a musl target built on a glibc host, so this repo does
+not publish an untested musl archive.
+
 From source:
 
 ```bash

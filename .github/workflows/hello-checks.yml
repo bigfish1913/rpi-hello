@@ -58,7 +58,7 @@ jobs:
           assert manifest["version"] == version, (manifest["version"], version)
           assert manifest["type"] == "extension"
           assert manifest["install"].startswith("rpi install rpi-hello ")
-          assert len(manifest["targets"]) == 6
+          assert len(manifest["targets"]) == 5
           print("manifest ok")
           PY
 
