@@ -1,0 +1,93 @@
+name: rpi-hello release
+
+on:
+  push:
+    tags: ['rpi-hello-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+          - runner: macos-15
+            target: aarch64-apple-darwin
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+    env:
+      RUSTFLAGS: '-D warnings'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install musl toolchain
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Package archive and manifest fragment
+        run: python scripts/package.py fragment --target ${{ matrix.target }} --repository ${{ github.repository }} --source-commit ${{ github.sha }} --out dist/release-assets
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prebuilt-${{ matrix.target }}
+          path: dist/release-assets/
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: publish release assets
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/rpi-hello-v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: prebuilt-*
+          merge-multiple: true
+          path: dist/release-assets
+      - name: Verify fragments and compose the manifest
+        run: python scripts/package.py manifest --fragments dist/release-assets --out dist/manifest
+      - name: Upload archives first, manifest last
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "$TAG" --notes "rpi-hello $TAG"
+          find dist/release-assets -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.zip' \) -print0 \
+            | xargs -0 --no-run-if-empty gh release upload "$TAG" --clobber
+          gh release upload "$TAG" dist/manifest/rpi-extension.json --clobber
+          gh release view "$TAG" --json assets --jq '.assets[].name'
