@@ -82,6 +82,9 @@ jobs:
       - name: Assert the tool is registered
         run: |
           set -euo pipefail
-          rpi --no-session --offline --no-skills --debug-system-prompt -p x > smoke.txt 2>&1
+          # No credentials in CI: a dummy key plus an unreachable endpoint lets
+          # startup print the system prompt before the (expected) transport error.
+          timeout 60 rpi --no-session --offline --no-skills --debug-system-prompt \
+            --api-key dummy --base-url http://127.0.0.1:9 -p x > smoke.txt 2>&1 || true
           grep -q '^- hello — Greet a person by name' smoke.txt
           echo "host loaded the hello tool"
