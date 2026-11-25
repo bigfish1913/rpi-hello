@@ -6,11 +6,23 @@
   "description": "Minimal rpi extension: a hello tool and a /hello command",
   "license": "MIT",
   "targets": [
-    { "target": "x86_64-unknown-linux-gnu" },
-    { "target": "aarch64-unknown-linux-gnu" },
-    { "target": "x86_64-apple-darwin" },
-    { "target": "aarch64-apple-darwin" },
-    { "target": "x86_64-pc-windows-msvc" }
+    {
+      "target": "x86_64-unknown-linux-gnu"
+    },
+    {
+      "target": "aarch64-unknown-linux-gnu"
+    },
+    {
+      "target": "x86_64-apple-darwin"
+    },
+    {
+      "target": "aarch64-apple-darwin"
+    },
+    {
+      "target": "x86_64-pc-windows-msvc"
+    }
   ],
-  "install": "rpi install rpi-hello --github bigfish1913/rpi-hello"
+  "install": "rpi install rpi-hello --github bigfish1913/rpi-hello",
+  "descriptionZh": "最小 rpi 扩展示例：提供 hello 工具和 /hello 命令。",
+  "descriptionEn": "Minimal rpi extension example with a hello tool and a /hello command."
 }
